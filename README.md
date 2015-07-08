@@ -1,3 +1,9 @@
+# Docker Slow!
+
+This is a summary of everything that's slow about `docker push`.
+
+1. Pull an image, then pushing it again results in all layers being pushed, including data.
+
 ## Step 1 - Initial Build and Push
 
 Start with a fresh Docker environment.
@@ -346,4 +352,286 @@ d45e4ad7ff24: Image successfully pushed
 bf84c1d84a8f: Image successfully pushed
 64e5325c0d9d: Image successfully pushed
 Digest: sha256:f69fb1678f436171a441db736b53a1640dfc276fa8e2f24d761de73ef4d236e4
+```
+
+### Step 3 - Pulling, forcing a specific tag, then pushing all tags
+
+```console
+$ docker pull ejholmes/docker-slow
+$ docker tag ejholmes/docker-slow ejholmes/docker-slow:master
+$ docker tag ejholmes/docker-slow ejholmes/docker-slow:$(git rev-parse HEAD)
+$ docker images
+REPOSITORY             TAG                                        IMAGE ID            CREATED             VIRTUAL SIZE
+ejholmes/docker-slow   4d9820c7999742cedd46c233f58356510de1fc31   11ea1aef2cf3        4 hours ago         704 MB
+ejholmes/docker-slow   latest                                     11ea1aef2cf3        4 hours ago         704 MB
+ejholmes/docker-slow   master                                     11ea1aef2cf3        4 hours ago         704 MB
+```
+
+Now we'll push the repo, which will push all tags. Notice that this pushes each layer 3 times. It seems to only push the data once.
+
+```console
+$ docker push ejholmes/docker-slow
+The push refers to a repository [ejholmes/docker-slow] (len: 3)
+11ea1aef2cf3: Image already exists
+11ea1aef2cf3: Image already exists
+11ea1aef2cf3: Image already exists
+672ce035aa55: Image already exists
+d875f4387b6a: Image already exists
+d826037ad53e: Image already exists
+db610d02f72f: Image already exists
+f845e91cae5f: Image already exists
+d89cf5d79288: Image already exists
+d7c381aacf5a: Image already exists
+325a020a03fe: Image already exists
+a1ed99fd54db: Image already exists
+42644941899f: Image already exists
+c5623821e93c: Image already exists
+22069f06dab4: Image already exists
+82bc5c9de744: Image already exists
+5df0b7777234: Image already exists
+ed3d295a9094: Image already exists
+d45e4ad7ff24: Image already exists
+78e2011c894a: Image already exists
+48a45cf3c1b3: Image already exists
+5f4f8ee0980f: Image already exists
+5a97b097c6e0: Image already exists
+6a974bea7c0d: Image already exists
+87de57de6955: Image already exists
+bf84c1d84a8f: Image already exists
+64e5325c0d9d: Image already exists
+Digest: sha256:aeb48be11689c09b0d65d35254968fca052e1a51e66b943dd5ed6a2f9bb0888b
+```
+
+Now clean docker
+
+```console
+$ boot2docker delete && boot2docker init && boot2docker start
+```
+
+Pull the `master` tag
+
+```console
+$ docker pull ejholmes/docker-slow:master
+master: Pulling from ejholmes/docker-slow
+64e5325c0d9d: Pull complete
+bf84c1d84a8f: Pull complete
+87de57de6955: Pull complete
+6a974bea7c0d: Pull complete
+5a97b097c6e0: Pull complete
+5f4f8ee0980f: Pull complete
+48a45cf3c1b3: Pull complete
+78e2011c894a: Pull complete
+d45e4ad7ff24: Pull complete
+ed3d295a9094: Pull complete
+5df0b7777234: Pull complete
+82bc5c9de744: Pull complete
+22069f06dab4: Pull complete
+c5623821e93c: Pull complete
+42644941899f: Pull complete
+a1ed99fd54db: Pull complete
+325a020a03fe: Pull complete
+d7c381aacf5a: Pull complete
+d89cf5d79288: Pull complete
+f845e91cae5f: Pull complete
+db610d02f72f: Pull complete
+d826037ad53e: Pull complete
+d875f4387b6a: Pull complete
+672ce035aa55: Pull complete
+11ea1aef2cf3: Already exists
+Digest: sha256:f52f8b866bfda756e4af0ffac334b1d6a5c36c39c243c9a373e7017280157a14
+Status: Downloaded newer image for ejholmes/docker-slow:master
+```
+
+Show images
+
+```console
+$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+ejholmes/docker-slow   master              11ea1aef2cf3        4 hours ago         704 MB
+```
+
+Build a new image
+
+```console
+$ touch file && docker build -t ejholmes/docker-slow .
+Sending build context to Docker daemon 125.4 kB
+Sending build context to Docker daemon
+Step 0 : FROM ruby:2.2.2
+2.2.2: Pulling from ruby
+64e5325c0d9d: Already exists
+bf84c1d84a8f: Already exists
+87de57de6955: Already exists
+6a974bea7c0d: Already exists
+5a97b097c6e0: Already exists
+5f4f8ee0980f: Already exists
+48a45cf3c1b3: Already exists
+78e2011c894a: Already exists
+d45e4ad7ff24: Already exists
+ed3d295a9094: Already exists
+5df0b7777234: Already exists
+82bc5c9de744: Already exists
+22069f06dab4: Already exists
+c5623821e93c: Already exists
+42644941899f: Already exists
+a1ed99fd54db: Already exists
+Digest: sha256:0d74e28f091e14d88413db9bbeb476bf78585f7fef3a1b7e93589cf0e587ce3f
+Status: Image is up to date for ruby:2.2.2
+ ---> a1ed99fd54db
+Step 1 : MAINTAINER Eric Holmes
+ ---> Using cache
+ ---> 325a020a03fe
+Step 2 : RUN bundle config --global frozen 1
+ ---> Using cache
+ ---> d7c381aacf5a
+Step 3 : RUN mkdir -p /home/app
+ ---> Using cache
+ ---> d89cf5d79288
+Step 4 : WORKDIR /home/app
+ ---> Using cache
+ ---> f845e91cae5f
+Step 5 : COPY Gemfile /home/app/
+ ---> Using cache
+ ---> db610d02f72f
+Step 6 : COPY Gemfile.lock /home/app/
+ ---> Using cache
+ ---> d826037ad53e
+Step 7 : RUN bundle install --jobs 4 --retry 3  --without development test unit features
+ ---> Using cache
+ ---> d875f4387b6a
+Step 8 : COPY . /home/app
+ ---> 7c9374447d3e
+Removing intermediate container 9ef4b2eb8154
+Step 9 : CMD bundle exec rails console
+ ---> Running in af4f2d09ebaa
+ ---> 85dc11425f7b
+Removing intermediate container af4f2d09ebaa
+Successfully built 85dc11425f7b
+```
+
+Show images
+
+```console
+$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+ejholmes/docker-slow   latest              85dc11425f7b        6 seconds ago       704 MB
+ejholmes/docker-slow   master              11ea1aef2cf3        4 hours ago         704 MB
+ruby                   2.2.2               a1ed99fd54db        9 days ago          704 MB
+```
+
+Show history for the new image
+
+```console
+ docker history 85dc11425f7b
+IMAGE               CREATED              CREATED BY                                      SIZE
+85dc11425f7b        About a minute ago   /bin/sh -c #(nop) CMD ["bundle" "exec" "rails   0 B
+7c9374447d3e        About a minute ago   /bin/sh -c #(nop) COPY dir:9dd43021d9cf96a60a   61.3 kB
+d875f4387b6a        5 hours ago          /bin/sh -c bundle install --jobs 4 --retry 3    887 B
+d826037ad53e        5 hours ago          /bin/sh -c #(nop) COPY file:0b6280704a6fc4d04   126 B
+db610d02f72f        5 hours ago          /bin/sh -c #(nop) COPY file:9e8416a559e63e8f2   42 B
+f845e91cae5f        5 hours ago          /bin/sh -c #(nop) WORKDIR /home/app             0 B
+d89cf5d79288        5 hours ago          /bin/sh -c mkdir -p /home/app                   0 B
+d7c381aacf5a        5 hours ago          /bin/sh -c bundle config --global frozen 1      92 B
+325a020a03fe        5 hours ago          /bin/sh -c #(nop) MAINTAINER Eric Holmes        0 B
+a1ed99fd54db        9 days ago           /bin/sh -c #(nop) CMD ["irb"]                   0 B
+42644941899f        9 days ago           /bin/sh -c #(nop) ENV BUNDLE_APP_CONFIG=/usr/   0 B
+c5623821e93c        9 days ago           /bin/sh -c gem install bundler --version "$BU   1.125 MB
+22069f06dab4        9 days ago           /bin/sh -c #(nop) ENV BUNDLER_VERSION=1.10.5    0 B
+82bc5c9de744        9 days ago           /bin/sh -c #(nop) ENV PATH=/usr/local/bundle/   0 B
+5df0b7777234        9 days ago           /bin/sh -c #(nop) ENV GEM_HOME=/usr/local/bun   0 B
+ed3d295a9094        9 days ago           /bin/sh -c echo 'gem: --no-rdoc --no-ri' >> "   23 B
+d45e4ad7ff24        9 days ago           /bin/sh -c apt-get update                       && apt-get install   98.72 MB
+78e2011c894a        9 days ago           /bin/sh -c #(nop) ENV RUBY_DOWNLOAD_SHA256=5f   0 B
+48a45cf3c1b3        9 days ago           /bin/sh -c #(nop) ENV RUBY_VERSION=2.2.2        0 B
+5f4f8ee0980f        9 days ago           /bin/sh -c #(nop) ENV RUBY_MAJOR=2.2            0 B
+5a97b097c6e0        9 days ago           /bin/sh -c apt-get update && apt-get install    312.3 MB
+6a974bea7c0d        3 weeks ago          /bin/sh -c apt-get update && apt-get install    122.3 MB
+87de57de6955        3 weeks ago          /bin/sh -c apt-get update && apt-get install    44.36 MB
+bf84c1d84a8f        3 weeks ago          /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B
+64e5325c0d9d        3 weeks ago          /bin/sh -c #(nop) ADD file:085531d120d9b9b091   125.2 MB
+```
+
+Tag the new image with the `master` tag.
+
+```console
+$ docker tag -f ejholmes/docker-slow ejholmes/docker-slow:master
+$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+ejholmes/docker-slow   latest              85dc11425f7b        2 minutes ago       704 MB
+ejholmes/docker-slow   master              85dc11425f7b        2 minutes ago       704 MB
+<none>                 <none>              11ea1aef2cf3        5 hours ago         704 MB
+ruby                   2.2.2               a1ed99fd54db        9 days ago          704 MB
+```
+
+Push the new images.
+
+```console
+$ docker push ejholmes/docker-slow
+The push refers to a repository [ejholmes/docker-slow] (len: 2)
+85dc11425f7b: Image already exists
+85dc11425f7b: Image already exists
+7c9374447d3e: Image already exists
+d875f4387b6a: Image already exists
+d826037ad53e: Image already exists
+db610d02f72f: Image already exists
+f845e91cae5f: Image already exists
+d89cf5d79288: Image already exists
+d7c381aacf5a: Image already exists
+325a020a03fe: Image already exists
+a1ed99fd54db: Image already exists
+42644941899f: Image already exists
+c5623821e93c: Image already exists
+22069f06dab4: Image already exists
+82bc5c9de744: Image already exists
+5df0b7777234: Image already exists
+ed3d295a9094: Image already exists
+d45e4ad7ff24: Image already exists
+78e2011c894a: Image already exists
+48a45cf3c1b3: Image already exists
+5f4f8ee0980f: Image already exists
+5a97b097c6e0: Image already exists
+6a974bea7c0d: Image already exists
+87de57de6955: Image already exists
+bf84c1d84a8f: Image already exists
+64e5325c0d9d: Image already exists
+Digest: sha256:721aa2901bea017182d14ad0d575e8b9670aa40656b221b3ab34274193da7af7
+```
+
+Clean Docker.
+
+```console
+$ boot2docker delete && boot2docker init && boot2docker start
+```
+
+Pull master
+
+```console
+$ docker pull ejholmes/docker-slow:master
+master: Pulling from ejholmes/docker-slow
+64e5325c0d9d: Pull complete
+bf84c1d84a8f: Pull complete
+87de57de6955: Pull complete
+6a974bea7c0d: Pull complete
+5a97b097c6e0: Pull complete
+5f4f8ee0980f: Pull complete
+48a45cf3c1b3: Pull complete
+78e2011c894a: Pull complete
+d45e4ad7ff24: Pull complete
+ed3d295a9094: Pull complete
+5df0b7777234: Pull complete
+82bc5c9de744: Pull complete
+22069f06dab4: Pull complete
+c5623821e93c: Pull complete
+42644941899f: Pull complete
+a1ed99fd54db: Pull complete
+325a020a03fe: Pull complete
+d7c381aacf5a: Pull complete
+d89cf5d79288: Pull complete
+f845e91cae5f: Pull complete
+db610d02f72f: Pull complete
+d826037ad53e: Pull complete
+d875f4387b6a: Pull complete
+7c9374447d3e: Pull complete
+85dc11425f7b: Already exists
+Digest: sha256:721aa2901bea017182d14ad0d575e8b9670aa40656b221b3ab34274193da7af7
+Status: Downloaded newer image for ejholmes/docker-slow:master
 ```
