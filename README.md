@@ -1,11 +1,15 @@
 ## Step 1 - Initial Build and Push
 
-We start with a fresh docker and build the image. This is going to pull the Ruby base image, and build a number of additional layers.
+Start with a fresh Docker environment.
 
 ```console
 $ boot2docker delete && boot2docker init && boot2docker start
-$ make
-docker build -t ejholmes/docker-slow .
+```
+
+Build the image
+
+```console
+$ docker build -t ejholmes/docker-slow .
 Sending build context to Docker daemon 7.168 kB
 Sending build context to Docker daemon
 Step 0 : FROM ruby:2.2.2
@@ -72,6 +76,11 @@ Step 9 : CMD bundle exec rails console
  ---> e1e8cd543876
 Removing intermediate container f62a9510b351
 Successfully built e1e8cd543876
+```
+
+Show the layers for the built image. Looks about right. Everything after `325a020a03fe` should be cached by the Docker registry.
+
+```console
 $ docker history ejholmes/docker-slow
 IMAGE               CREATED             CREATED BY                                      SIZE
 e1e8cd543876        5 minutes ago       /bin/sh -c #(nop) CMD ["bundle" "exec" "rails   0 B
