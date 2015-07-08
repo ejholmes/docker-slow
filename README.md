@@ -109,3 +109,36 @@ d45e4ad7ff24        8 days ago          /bin/sh -c apt-get update               
 bf84c1d84a8f        3 weeks ago         /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B
 64e5325c0d9d        3 weeks ago         /bin/sh -c #(nop) ADD file:085531d120d9b9b091   125.2 MB
 ```
+
+Now let's push the image to the registry. Note that **every** layer is pushed (the output doesn't show it here, but the data for each layer was pushed as well), even the layers that we pulled from the registry. We would expect these layers to be cached and the CLI to reflect that.
+
+```console
+$ docker push ejholmes/docker-slow
+The push refers to a repository [ejholmes/docker-slow] (len: 1)
+e1e8cd543876: Image already exists
+1868017f146d: Image successfully pushed
+d875f4387b6a: Image successfully pushed
+d826037ad53e: Image successfully pushed
+db610d02f72f: Image successfully pushed
+f845e91cae5f: Image successfully pushed
+d89cf5d79288: Image successfully pushed
+d7c381aacf5a: Image successfully pushed
+325a020a03fe: Image successfully pushed
+a1ed99fd54db: Image successfully pushed
+42644941899f: Image successfully pushed
+c5623821e93c: Image successfully pushed
+22069f06dab4: Image successfully pushed
+82bc5c9de744: Image successfully pushed
+5df0b7777234: Image successfully pushed
+ed3d295a9094: Image successfully pushed
+d45e4ad7ff24: Image successfully pushed
+78e2011c894a: Image successfully pushed
+48a45cf3c1b3: Image successfully pushed
+5f4f8ee0980f: Image successfully pushed
+5a97b097c6e0: Image successfully pushed
+6a974bea7c0d: Image successfully pushed
+87de57de6955: Image successfully pushed
+bf84c1d84a8f: Image successfully pushed
+64e5325c0d9d: Image successfully pushed
+Digest: sha256:4a8a6fb67c01e065cdf6b29ab97e3862a255fb63e477f258695b49e4fb78a619
+```
